@@ -603,8 +603,8 @@
 
     <script>
         // Configuración de Supabase - REEMPLAZA CON TUS PROPIOS DATOS
-        const SUPABASE_URL = 'https://eiqdsndrwajvncmjfjgo.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpcWRzbmRyd2Fqdm5jbWpmamdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMjk5MjksImV4cCI6MjA3OTYwNTkyOX0.VIrB_Zp57Rbb5b-hirwxVEGVymS6SIPBBxcrHhj94wU';
+        const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
+        const SUPABASE_ANON_KEY = 'tu-clave-anon-aqui';
         
         // Inicializar Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -926,10 +926,25 @@
         // Función para subir archivo a Supabase Storage
         async function subirArchivo(file, bucket, carpeta, nombreArchivo) {
             try {
+                // Verificar que el bucket existe
+                const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+                if (bucketsError) {
+                    console.error('Error listando buckets:', bucketsError);
+                    return { error: 'Error conectando con el servidor de almacenamiento' };
+                }
+                
+                const bucketExists = buckets.some(b => b.name === bucket);
+                if (!bucketExists) {
+                    console.error(`El bucket ${bucket} no existe`);
+                    return { error: `El bucket ${bucket} no existe. Crea el bucket en Supabase primero.` };
+                }
+                
                 // Generar un nombre único para el archivo
                 const extension = file.name.split('.').pop();
                 const nombreUnico = `${nombreArchivo || Date.now()}.${extension}`;
                 const rutaCompleta = `${carpeta}/${nombreUnico}`;
+                
+                console.log('Subiendo archivo:', rutaCompleta);
                 
                 const { data, error } = await supabase.storage
                     .from(bucket)
@@ -940,7 +955,13 @@
                 
                 if (error) {
                     console.error('Error subiendo archivo:', error);
-                    return null;
+                    
+                    // Verificar si es un error de políticas
+                    if (error.message.includes('policy') || error.message.includes('Policy')) {
+                        return { error: 'Error de permisos. Verifica las políticas RLS del bucket.' };
+                    }
+                    
+                    return { error: error.message };
                 }
                 
                 // Obtener URL pública del archivo
@@ -948,10 +969,11 @@
                     .from(bucket)
                     .getPublicUrl(rutaCompleta);
                 
-                return urlData.publicUrl;
+                console.log('Archivo subido. URL:', urlData.publicUrl);
+                return { url: urlData.publicUrl };
             } catch (error) {
                 console.error('Error en subirArchivo:', error);
-                return null;
+                return { error: error.message };
             }
         }
 
@@ -1198,14 +1220,21 @@
             }
             
             const file = fileInput.files[0];
-            const url = await subirArchivo(file, 'yunchen-app', 'avatars', 'avatar');
             
-            if (url) {
-                await actualizarAvatar(url);
+            // Validar tamaño del archivo (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('El archivo es demasiado grande. Máximo 5MB permitido.');
+                return;
+            }
+            
+            const result = await subirArchivo(file, 'yunchen-app', 'avatars', 'avatar');
+            
+            if (result.url) {
+                await actualizarAvatar(result.url);
                 fileInput.value = ''; // Limpiar input
                 alert('Avatar actualizado correctamente');
             } else {
-                alert('Error al subir el avatar. Intenta nuevamente.');
+                alert('Error al subir el avatar: ' + result.error);
             }
         }
 
@@ -1218,14 +1247,21 @@
             }
             
             const file = fileInput.files[0];
-            const url = await subirArchivo(file, 'yunchen-app', 'coins', 'coin');
             
-            if (url) {
-                await actualizarCoinIcon(url);
+            // Validar tamaño del archivo (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('El archivo es demasiado grande. Máximo 5MB permitido.');
+                return;
+            }
+            
+            const result = await subirArchivo(file, 'yunchen-app', 'coins', 'coin');
+            
+            if (result.url) {
+                await actualizarCoinIcon(result.url);
                 fileInput.value = ''; // Limpiar input
                 alert('Coin actualizado correctamente');
             } else {
-                alert('Error al subir el coin. Intenta nuevamente.');
+                alert('Error al subir el coin: ' + result.error);
             }
         }
 
@@ -1245,16 +1281,23 @@
             }
             
             const file = fileInput.files[0];
-            const url = await subirArchivo(file, 'yunchen-app', 'achievements', `achievement-${indice}`);
             
-            if (url) {
+            // Validar tamaño del archivo (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('El archivo es demasiado grande. Máximo 5MB permitido.');
+                return;
+            }
+            
+            const result = await subirArchivo(file, 'yunchen-app', 'achievements', `achievement-${indice}`);
+            
+            if (result.url) {
                 // Para logros individuales, actualizamos la imagen directamente
-                actualizarLogro(indice, url);
+                actualizarLogro(indice, result.url);
                 fileInput.value = ''; // Limpiar input
                 document.getElementById('achievement-index').value = '';
                 alert('Logro actualizado correctamente');
             } else {
-                alert('Error al subir el logro. Intenta nuevamente.');
+                alert('Error al subir el logro: ' + result.error);
             }
         }
 
@@ -1267,12 +1310,19 @@
             }
             
             const file = fileInput.files[0];
-            const url = await subirArchivo(file, 'yunchen-app', 'achievements', 'achievement-default');
             
-            if (url) {
-                config.achievement = url;
+            // Validar tamaño del archivo (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('El archivo es demasiado grande. Máximo 5MB permitido.');
+                return;
+            }
+            
+            const result = await subirArchivo(file, 'yunchen-app', 'achievements', 'achievement-default');
+            
+            if (result.url) {
+                config.achievement = result.url;
                 for (let i = 0; i < achievements.length; i++) {
-                    actualizarLogro(i, url);
+                    actualizarLogro(i, result.url);
                 }
                 fileInput.value = ''; // Limpiar input
                 
@@ -1282,7 +1332,7 @@
                 cargarLogros(); // Recargar para mostrar los cambios
                 alert('Todos los logros actualizados correctamente');
             } else {
-                alert('Error al subir la imagen para los logros. Intenta nuevamente.');
+                alert('Error al subir la imagen para los logros: ' + result.error);
             }
         }
 

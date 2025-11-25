@@ -222,7 +222,7 @@
             font-size: 14px;
         }
 
-        .url-input, .number-input {
+        .url-input, .number-input, .file-input {
             width: 100%;
             padding: 8px;
             border-radius: 5px;
@@ -231,6 +231,10 @@
             color: white;
             font-size: 12px;
             margin-bottom: 8px;
+        }
+
+        .file-input {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .update-btn {
@@ -528,28 +532,28 @@
             </div>
             
             <div class="control-group">
-                <label class="control-label pixel-text">URL Avatar Yunchen (Imgur):</label>
-                <input type="text" id="avatar-url" class="url-input" placeholder="https://i.imgur.com/...">
-                <button class="update-btn pixel-text" onclick="actualizarAvatarDesdeInput()">Actualizar Avatar</button>
+                <label class="control-label pixel-text">Subir Avatar Yunchen:</label>
+                <input type="file" id="avatar-file" class="file-input" accept="image/*">
+                <button class="update-btn pixel-text" onclick="subirYActualizarAvatar()">Subir y Actualizar Avatar</button>
             </div>
             
             <div class="control-group">
-                <label class="control-label pixel-text">URL Icono Coin (Imgur):</label>
-                <input type="text" id="coin-url" class="url-input" placeholder="https://i.imgur.com/...">
-                <button class="update-btn pixel-text" onclick="actualizarCoinIconDesdeInput()">Actualizar Coin</button>
+                <label class="control-label pixel-text">Subir Icono Coin:</label>
+                <input type="file" id="coin-file" class="file-input" accept="image/*">
+                <button class="update-btn pixel-text" onclick="subirYActualizarCoin()">Subir y Actualizar Coin</button>
             </div>
             
             <div class="control-group">
-                <label class="control-label pixel-text">Actualizar Logro Específico:</label>
+                <label class="control-label pixel-text">Subir Logro Específico:</label>
                 <input type="number" id="achievement-index" class="number-input" placeholder="Índice (0-35)" min="0" max="35">
-                <input type="text" id="achievement-url" class="url-input" placeholder="https://i.imgur.com/...">
-                <button class="update-btn pixel-text" onclick="actualizarLogroDesdeInput()">Actualizar Logro</button>
+                <input type="file" id="achievement-file" class="file-input" accept="image/*">
+                <button class="update-btn pixel-text" onclick="subirYActualizarLogro()">Subir y Actualizar Logro</button>
             </div>
             
             <div class="control-group">
-                <label class="control-label pixel-text">Actualizar Todos los Logros:</label>
-                <input type="text" id="all-achievements-url" class="url-input" placeholder="https://i.imgur.com/...">
-                <button class="update-btn pixel-text" onclick="actualizarTodosLosLogros()">Actualizar Todos</button>
+                <label class="control-label pixel-text">Subir Imagen para Todos los Logros:</label>
+                <input type="file" id="all-achievements-file" class="file-input" accept="image/*">
+                <button class="update-btn pixel-text" onclick="subirYActualizarTodosLogros()">Subir y Actualizar Todos</button>
             </div>
             
             <div class="control-group">
@@ -598,9 +602,8 @@
     </div>
 
     <script>
-        // Configuración de Supabase
-        const SUPABASE_URL = 'https://uwpiqgofpcvxpksdeffy.supabase.co';
-        // Reemplaza con tu clave anónima de Supabase
+        // Configuración de Supabase - REEMPLAZA CON TUS PROPIOS DATOS
+        const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
         const SUPABASE_ANON_KEY = 'tu-clave-anon-aqui';
         
         // Inicializar Supabase
@@ -612,9 +615,9 @@
         // Configuración por defecto de la aplicación
         const defaultConfig = {
             coins: 60,
-            avatar: 'https://i.imgur.com/x3mR3pN.png',
-            coin: 'https://i.imgur.com/8Q6ZQ0W.png',
-            achievement: 'https://i.imgur.com/medalla.png'
+            avatar: '', // Se cargará desde Supabase
+            coin: '',   // Se cargará desde Supabase
+            achievement: '' // Se cargará desde Supabase
         };
 
         // Estado para controlar qué logros se muestran
@@ -920,6 +923,38 @@
             }
         ];
 
+        // Función para subir archivo a Supabase Storage
+        async function subirArchivo(file, bucket, carpeta, nombreArchivo) {
+            try {
+                // Generar un nombre único para el archivo
+                const extension = file.name.split('.').pop();
+                const nombreUnico = `${nombreArchivo || Date.now()}.${extension}`;
+                const rutaCompleta = `${carpeta}/${nombreUnico}`;
+                
+                const { data, error } = await supabase.storage
+                    .from(bucket)
+                    .upload(rutaCompleta, file, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
+                
+                if (error) {
+                    console.error('Error subiendo archivo:', error);
+                    return null;
+                }
+                
+                // Obtener URL pública del archivo
+                const { data: urlData } = supabase.storage
+                    .from(bucket)
+                    .getPublicUrl(rutaCompleta);
+                
+                return urlData.publicUrl;
+            } catch (error) {
+                console.error('Error en subirArchivo:', error);
+                return null;
+            }
+        }
+
         // Función para guardar la configuración en localStorage
         function guardarConfiguracion() {
             localStorage.setItem('yunchenAppConfig', JSON.stringify(config));
@@ -1005,11 +1040,19 @@
             
             // Cargar avatar
             const avatarContainer = document.getElementById('avatar-container');
-            avatarContainer.innerHTML = `<img src="${config.avatar}" alt="Avatar Yunchen" class="avatar-img" id="yunchen-avatar">`;
+            if (config.avatar) {
+                avatarContainer.innerHTML = `<img src="${config.avatar}" alt="Avatar Yunchen" class="avatar-img" id="yunchen-avatar">`;
+            } else {
+                avatarContainer.innerHTML = `<div style="width:100%;height:100%;background:var(--morado-claro);display:flex;align-items:center;justify-content:center;"><i class="fas fa-user"></i></div>`;
+            }
             
             // Cargar coin icon
             const coinIcon = document.getElementById('coin-icon');
-            coinIcon.innerHTML = `<img src="${config.coin}" alt="Coin" class="coin-img" id="coin-image">`;
+            if (config.coin) {
+                coinIcon.innerHTML = `<img src="${config.coin}" alt="Coin" class="coin-img" id="coin-image">`;
+            } else {
+                coinIcon.innerHTML = `<div style="width:100%;height:100%;background:var(--amarillo);border-radius:50%;display:flex;align-items:center;justify-content:center;"><i class="fas fa-coins"></i></div>`;
+            }
             
             // Cargar coins count
             document.getElementById('coins-count').textContent = config.coins;
@@ -1032,12 +1075,21 @@
             logrosAMostrar.forEach((achievement, index) => {
                 const card = document.createElement('div');
                 card.className = 'achievement-card pixel-border';
-                card.innerHTML = `
-                    <div class="achievement-icon">
-                        <img src="${config.achievement}" alt="Logro ${index + 1}" class="achievement-img" id="achievement-${index}">
-                    </div>
-                    <div class="achievement-date pixel-text">${achievement.date}</div>
-                `;
+                if (config.achievement) {
+                    card.innerHTML = `
+                        <div class="achievement-icon">
+                            <img src="${config.achievement}" alt="Logro ${index + 1}" class="achievement-img" id="achievement-${index}">
+                        </div>
+                        <div class="achievement-date pixel-text">${achievement.date}</div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="achievement-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="achievement-date pixel-text">${achievement.date}</div>
+                    `;
+                }
                 container.appendChild(card);
             });
             
@@ -1120,6 +1172,7 @@
             if (!isNaN(nuevoValor) && nuevoValor >= 0) {
                 await actualizarCoins(nuevoValor);
                 document.getElementById('coins-input').value = '';
+                alert('Coins actualizadas correctamente');
             } else {
                 alert('Por favor, ingresa un número válido para las coins');
             }
@@ -1136,54 +1189,100 @@
             await guardarConfiguracionEnSupabase();
         }
 
-        async function actualizarAvatarDesdeInput() {
-            const nuevaUrl = document.getElementById('avatar-url').value;
-            if (nuevaUrl) {
-                await actualizarAvatar(nuevaUrl);
-                document.getElementById('avatar-url').value = '';
-            } else {
-                alert('Por favor, ingresa una URL válida de Imgur');
+        // Nueva función para subir y actualizar avatar
+        async function subirYActualizarAvatar() {
+            const fileInput = document.getElementById('avatar-file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Por favor, selecciona un archivo para el avatar');
+                return;
             }
-        }
-
-        async function actualizarCoinIconDesdeInput() {
-            const nuevaUrl = document.getElementById('coin-url').value;
-            if (nuevaUrl) {
-                await actualizarCoinIcon(nuevaUrl);
-                document.getElementById('coin-url').value = '';
-            } else {
-                alert('Por favor, ingresa una URL válida de Imgur');
-            }
-        }
-
-        async function actualizarLogroDesdeInput() {
-            const indice = parseInt(document.getElementById('achievement-index').value);
-            const nuevaUrl = document.getElementById('achievement-url').value;
             
-            if (!isNaN(indice) && indice >= 0 && indice < achievements.length && nuevaUrl) {
-                await actualizarLogro(indice, nuevaUrl);
-                document.getElementById('achievement-index').value = '';
-                document.getElementById('achievement-url').value = '';
+            const file = fileInput.files[0];
+            const url = await subirArchivo(file, 'yunchen-app', 'avatars', 'avatar');
+            
+            if (url) {
+                await actualizarAvatar(url);
+                fileInput.value = ''; // Limpiar input
+                alert('Avatar actualizado correctamente');
             } else {
-                alert('Por favor, ingresa un índice válido (0-35) y una URL de Imgur');
+                alert('Error al subir el avatar. Intenta nuevamente.');
             }
         }
 
-        async function actualizarTodosLosLogros() {
-            const nuevaUrl = document.getElementById('all-achievements-url').value;
-            if (nuevaUrl) {
-                config.achievement = nuevaUrl;
+        // Nueva función para subir y actualizar coin
+        async function subirYActualizarCoin() {
+            const fileInput = document.getElementById('coin-file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Por favor, selecciona un archivo para el coin');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const url = await subirArchivo(file, 'yunchen-app', 'coins', 'coin');
+            
+            if (url) {
+                await actualizarCoinIcon(url);
+                fileInput.value = ''; // Limpiar input
+                alert('Coin actualizado correctamente');
+            } else {
+                alert('Error al subir el coin. Intenta nuevamente.');
+            }
+        }
+
+        // Nueva función para subir y actualizar logro específico
+        async function subirYActualizarLogro() {
+            const indice = parseInt(document.getElementById('achievement-index').value);
+            const fileInput = document.getElementById('achievement-file');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Por favor, selecciona un archivo para el logro');
+                return;
+            }
+            
+            if (isNaN(indice) || indice < 0 || indice >= achievements.length) {
+                alert('Por favor, ingresa un índice válido (0-35)');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const url = await subirArchivo(file, 'yunchen-app', 'achievements', `achievement-${indice}`);
+            
+            if (url) {
+                // Para logros individuales, actualizamos la imagen directamente
+                actualizarLogro(indice, url);
+                fileInput.value = ''; // Limpiar input
+                document.getElementById('achievement-index').value = '';
+                alert('Logro actualizado correctamente');
+            } else {
+                alert('Error al subir el logro. Intenta nuevamente.');
+            }
+        }
+
+        // Nueva función para subir y actualizar todos los logros
+        async function subirYActualizarTodosLogros() {
+            const fileInput = document.getElementById('all-achievements-file');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Por favor, selecciona un archivo para todos los logros');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const url = await subirArchivo(file, 'yunchen-app', 'achievements', 'achievement-default');
+            
+            if (url) {
+                config.achievement = url;
                 for (let i = 0; i < achievements.length; i++) {
-                    actualizarLogro(i, nuevaUrl);
+                    actualizarLogro(i, url);
                 }
-                document.getElementById('all-achievements-url').value = '';
+                fileInput.value = ''; // Limpiar input
                 
                 // Guardar cambios
                 guardarConfiguracion();
                 await guardarConfiguracionEnSupabase();
                 cargarLogros(); // Recargar para mostrar los cambios
+                alert('Todos los logros actualizados correctamente');
             } else {
-                alert('Por favor, ingresa una URL válida de Imgur');
+                alert('Error al subir la imagen para los logros. Intenta nuevamente.');
             }
         }
 
@@ -1246,6 +1345,7 @@
             window.actualizarAvatar = actualizarAvatar;
             window.actualizarCoinIcon = actualizarCoinIcon;
             window.actualizarLogro = actualizarLogro;
+            window.subirArchivo = subirArchivo;
         });
     </script>
 </body>

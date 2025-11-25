@@ -600,7 +600,8 @@
     <script>
         // Configuración de Supabase
         const SUPABASE_URL = 'https://uwpiqgofpcvxpksdeffy.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3cGlxZ29mcGN2eHBrc2RlZmZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4NDI2MjgsImV4cCI6MjA3OTQxODYyOH0.4Z3FfYWJcZa7aF_7Jz-Tj6Q4C9KstvUqW71JC57Yom0';
+        // Reemplaza con tu clave anónima de Supabase
+        const SUPABASE_ANON_KEY = 'tu-clave-anon-aqui';
         
         // Inicializar Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -922,13 +923,23 @@
         // Función para guardar la configuración en localStorage
         function guardarConfiguracion() {
             localStorage.setItem('yunchenAppConfig', JSON.stringify(config));
+            console.log('Configuración guardada en localStorage:', config);
         }
 
         // Función para cargar la configuración desde localStorage
         function cargarConfiguracion() {
             const configGuardada = localStorage.getItem('yunchenAppConfig');
             if (configGuardada) {
-                config = {...defaultConfig, ...JSON.parse(configGuardada)};
+                try {
+                    const parsedConfig = JSON.parse(configGuardada);
+                    config = {...defaultConfig, ...parsedConfig};
+                    console.log('Configuración cargada desde localStorage:', config);
+                } catch (e) {
+                    console.error('Error al cargar configuración:', e);
+                    config = {...defaultConfig};
+                }
+            } else {
+                console.log('No se encontró configuración guardada, usando valores por defecto');
             }
         }
 
@@ -947,6 +958,7 @@
                     console.error('Error guardando en Supabase:', error);
                     return false;
                 }
+                console.log('Configuración guardada en Supabase:', data);
                 return true;
             } catch (error) {
                 console.error('Error conectando con Supabase:', error);
@@ -971,6 +983,7 @@
                 if (data && data.config_data) {
                     config = {...defaultConfig, ...data.config_data};
                     guardarConfiguracion(); // Guardar en localStorage como respaldo
+                    console.log('Configuración cargada desde Supabase:', config);
                     return true;
                 }
                 return false;

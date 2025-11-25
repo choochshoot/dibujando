@@ -138,6 +138,34 @@
             box-shadow: 0 8px 0 var(--purple-dark);
             margin-bottom: 20px;
             padding: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        /* Clase para header fijo en móvil */
+        header.fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            margin-bottom: 0;
+            animation: slideDown 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        
+        /* Espacio para compensar el header fijo */
+        .header-spacer {
+            height: 0;
+            transition: height 0.3s ease;
+        }
+        
+        .header-spacer.active {
+            height: 140px; /* Altura aproximada del header en móvil */
         }
         
         .header-content {
@@ -153,14 +181,16 @@
             flex-wrap: wrap;
         }
         
+        /* Avatar más grande */
         .student-avatar {
-            width: 80px;
-            height: 80px;
+            width: 120px; /* Aumentado de 80px */
+            height: 120px; /* Aumentado de 80px */
             border-radius: 0;
             object-fit: cover;
             margin-right: 20px;
             border: 3px solid var(--pink);
             image-rendering: pixelated;
+            transition: all 0.3s ease;
         }
         
         .student-name {
@@ -338,6 +368,8 @@
             .student-avatar {
                 margin-right: 0;
                 margin-bottom: 10px;
+                width: 100px; /* Ajuste para móvil */
+                height: 100px; /* Ajuste para móvil */
             }
             
             .achievements-grid {
@@ -383,6 +415,12 @@
             .loading-text {
                 font-size: 0.7rem;
             }
+            
+            /* Ajustes para avatar en móvil */
+            .student-avatar {
+                width: 90px;
+                height: 90px;
+            }
         }
         
         /* Efectos especiales */
@@ -426,11 +464,11 @@
     </div>
     
     <!-- Contenido principal (oculto inicialmente) -->
-    <header>
+    <header id="main-header">
         <div class="container">
             <div class="header-content">
                 <div class="student-info">
-                    <!-- Avatar desde Imgur -->
+                    <!-- Avatar desde Imgur - ahora más grande -->
                     <img id="student-avatar" src="https://i.imgur.com/ZRYHTud.png" alt="Avatar Yunchen" class="student-avatar">
                     <div>
                         <div id="student-name" class="student-name">YUNCHEN</div>
@@ -444,6 +482,9 @@
             </div>
         </div>
     </header>
+    
+    <!-- Espaciador para compensar header fijo -->
+    <div class="header-spacer" id="header-spacer"></div>
     
     <div class="container">
         <!-- Sección de Logros -->
@@ -473,6 +514,8 @@
         const achievementsContainer = document.getElementById('achievements-container');
         const programContainer = document.getElementById('program-container');
         const preloader = document.getElementById('preloader');
+        const mainHeader = document.getElementById('main-header');
+        const headerSpacer = document.getElementById('header-spacer');
         
         // Ocultar preloader después de 4 segundos
         window.addEventListener('load', function() {
@@ -483,6 +526,30 @@
                 }, 500);
             }, 4000);
         });
+        
+        // Función para manejar el header fijo en scroll móvil
+        function handleFixedHeader() {
+            // Solo aplicar en dispositivos móviles
+            if (window.innerWidth <= 768) {
+                const scrollPosition = window.scrollY;
+                
+                if (scrollPosition > 100) {
+                    mainHeader.classList.add('fixed-header');
+                    headerSpacer.classList.add('active');
+                } else {
+                    mainHeader.classList.remove('fixed-header');
+                    headerSpacer.classList.remove('active');
+                }
+            } else {
+                // En escritorio, asegurarse de que no esté fijo
+                mainHeader.classList.remove('fixed-header');
+                headerSpacer.classList.remove('active');
+            }
+        }
+        
+        // Escuchar eventos de scroll y resize
+        window.addEventListener('scroll', handleFixedHeader);
+        window.addEventListener('resize', handleFixedHeader);
         
         // Cargar información del estudiante
         function loadStudentInfo() {
@@ -501,23 +568,23 @@
                 { 
                     achievement_image: 'https://i.imgur.com/U3JwfRy.jpeg',
                     achievement_date: '2025-11-16', 
-                    coins: 10,
+                    coins: 40,
                     title: 'PRIMER DIBUJO'
                 },
                 { 
                     achievement_image: 'https://i.imgur.com/ALlmQM2.png',
                     achievement_date: '2025-11-23', 
-                    coins: 50,
+                    coins: 20,
                     title: 'LÍNEAS MAESTRAS'
                 },
                 { 
-                    achievement_image: 'https://i.imgur.com/mT9o5Wp.gif',
+                    achievement_image: 'https://i.imgur.com/MQIDOJR.png',
                     achievement_date: '2025-11-30', 
                     coins: 0,
                     title: 'terminar plantilla continuacion de estudio'
                 },
                 { 
-                    achievement_image: 'https://i.imgur.com/2c8L2wS.gif',
+                    achievement_image: 'https://i.imgur.com/MQIDOJR.png',
                     achievement_date: '2025-12-07', 
                     coins: 0,
                     title: 'SOMBRAS PROFESIONALES'

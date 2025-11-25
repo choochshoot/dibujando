@@ -1428,7 +1428,74 @@ async function actualizarCoinsDesdeInput() {
                 achievementImg.src = nuevaUrl;
             }
         }
+                   // ... otras funciones existentes ...
 
+        // =============================================
+        // FUNCIÓN TEMPORAL DE VERIFICACIÓN - ELIMINAR DESPUÉS
+        // =============================================
+        async function verificarStorage() {
+            console.log('🔍 Verificando configuración de Storage...');
+            
+            try {
+                // Verificar buckets disponibles
+                const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+                
+                if (bucketsError) {
+                    console.error('❌ Error listando buckets:', bucketsError);
+                    return false;
+                }
+                
+                console.log('📦 Buckets disponibles:', buckets);
+                
+                const bucketYunchen = buckets.find(b => b.name === 'yunchen-app');
+                if (!bucketYunchen) {
+                    console.error('❌ Bucket yunchen-app NO encontrado');
+                    alert('❌ El bucket "yunchen-app" no existe. Créalo en Supabase > Storage.');
+                    return false;
+                }
+                
+                console.log('✅ Bucket yunchen-app encontrado:', bucketYunchen);
+                
+                // Probar listar archivos (para verificar permisos)
+                const { data: files, error: filesError } = await supabase.storage
+                    .from('yunchen-app')
+                    .list('avatars');
+                    
+                if (filesError && !filesError.message.includes('Not Found')) {
+                    console.error('❌ Error listando archivos:', filesError);
+                } else {
+                    console.log('✅ Permisos de storage funcionando. Archivos en avatars:', files);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Error en verificarStorage:', error);
+                return false;
+            }
+        }
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarImagenesIniciales();
+            
+            // Configurar evento para el botón de acceso profesor
+            document.getElementById('admin-btn').addEventListener('click', mostrarModalPassword);
+            
+            // Configurar evento para el botón "Ver más logros"
+            document.getElementById('view-more-btn').addEventListener('click', cargarMasLogros);
+            
+            // Permitir enviar contraseña con Enter
+            document.getElementById('password-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    verificarPassword();
+                }
+            });
+            
+            // =============================================
+            // LLAMADA TEMPORAL - ELIMINAR DESPUÉS
+            // =============================================
+            setTimeout(verificarStorage, 2000);
+        });
         // Inicializar la aplicación
         document.addEventListener('DOMContentLoaded', function() {
             cargarImagenesIniciales();

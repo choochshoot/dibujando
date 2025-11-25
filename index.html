@@ -1213,17 +1213,33 @@ async function guardarConfiguracionEnSupabase() {
             document.getElementById('update-controls').style.display = 'none';
         }
 
-        // Funciones de actualización de contenido
-        async function actualizarCoinsDesdeInput() {
-            const nuevoValor = parseInt(document.getElementById('coins-input').value);
-            if (!isNaN(nuevoValor) && nuevoValor >= 0) {
-                await actualizarCoins(nuevoValor);
-                document.getElementById('coins-input').value = '';
-                alert('Coins actualizadas correctamente');
-            } else {
-                alert('Por favor, ingresa un número válido para las coins');
-            }
+        // Función MEJORADA para actualizar coins desde input
+async function actualizarCoinsDesdeInput() {
+    const nuevoValor = parseInt(document.getElementById('coins-input').value);
+    if (!isNaN(nuevoValor) && nuevoValor >= 0) {
+        console.log('🎯 Actualizando coins a:', nuevoValor);
+        
+        // Actualizar interfaz inmediatamente
+        config.coins = nuevoValor;
+        document.getElementById('coins-count').textContent = nuevoValor;
+        
+        // Guardar en localStorage primero
+        guardarConfiguracion();
+        console.log('✅ Configuración guardada en localStorage');
+        
+        // Intentar guardar en Supabase
+        const exito = await guardarConfiguracionEnSupabase();
+        
+        if (exito) {
+            alert('✅ Coins actualizadas correctamente en Supabase');
+            document.getElementById('coins-input').value = '';
+        } else {
+            alert('⚠️ Coins actualizadas localmente pero NO en Supabase. Revisa la consola.');
         }
+    } else {
+        alert('Por favor, ingresa un número válido para las coins');
+    }
+}
 
         async function actualizarCoins(nuevoValor) {
             config.coins = nuevoValor;

@@ -207,6 +207,9 @@
 
         .control-group {
             margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
         }
 
         .control-label {
@@ -216,7 +219,7 @@
             font-size: 14px;
         }
 
-        .url-input {
+        .url-input, .number-input {
             width: 100%;
             padding: 8px;
             border-radius: 5px;
@@ -445,7 +448,13 @@
 
         <!-- Panel de actualización (oculto inicialmente) -->
         <div class="update-controls" id="update-controls">
-            <h2 class="section-title">PANEL DE PROFESOR - ACTUALIZAR IMÁGENES</h2>
+            <h2 class="section-title">PANEL DE PROFESOR - ACTUALIZAR CONTENIDO</h2>
+            
+            <div class="control-group">
+                <label class="control-label">Actualizar Coins Logradas:</label>
+                <input type="number" id="coins-input" class="number-input" placeholder="Nuevo valor de coins" min="0">
+                <button class="update-btn" onclick="actualizarCoinsDesdeInput()">Actualizar Coins</button>
+            </div>
             
             <div class="control-group">
                 <label class="control-label">URL Avatar Yunchen (Imgur):</label>
@@ -461,7 +470,7 @@
             
             <div class="control-group">
                 <label class="control-label">Actualizar Logro Específico:</label>
-                <input type="number" id="achievement-index" class="url-input" placeholder="Índice (0-35)" min="0" max="35">
+                <input type="number" id="achievement-index" class="number-input" placeholder="Índice (0-35)" min="0" max="35">
                 <input type="text" id="achievement-url" class="url-input" placeholder="https://i.imgur.com/...">
                 <button class="update-btn" onclick="actualizarLogroDesdeInput()">Actualizar Logro</button>
             </div>
@@ -517,8 +526,9 @@
         // Contraseña de profesor
         const PROFESSOR_PASSWORD = "coche#34";
         
-        // URLs de Imgur por defecto
-        const defaultImages = {
+        // Configuración de la aplicación
+        const config = {
+            coins: 60,
             avatar: 'https://i.imgur.com/x3mR3pN.png', // Avatar de ejemplo
             coin: 'https://i.imgur.com/8Q6ZQ0W.png',   // Coin de ejemplo
             achievement: 'https://i.imgur.com/medalla.png' // Logro de ejemplo
@@ -824,14 +834,14 @@
         function cargarImagenesIniciales() {
             // Cargar avatar
             const avatarContainer = document.getElementById('avatar-container');
-            avatarContainer.innerHTML = `<img src="${defaultImages.avatar}" alt="Avatar Yunchen" class="avatar-img" id="yunchen-avatar">`;
+            avatarContainer.innerHTML = `<img src="${config.avatar}" alt="Avatar Yunchen" class="avatar-img" id="yunchen-avatar">`;
             
             // Cargar coin icon
             const coinIcon = document.getElementById('coin-icon');
-            coinIcon.innerHTML = `<img src="${defaultImages.coin}" alt="Coin" class="coin-img" id="coin-image">`;
+            coinIcon.innerHTML = `<img src="${config.coin}" alt="Coin" class="coin-img" id="coin-image">`;
             
             // Cargar coins count
-            document.getElementById('coins-count').textContent = "60";
+            document.getElementById('coins-count').textContent = config.coins;
             
             // Cargar logros
             cargarLogros();
@@ -850,7 +860,7 @@
                 card.className = 'achievement-card pixel-border';
                 card.innerHTML = `
                     <div class="achievement-icon">
-                        <img src="${defaultImages.achievement}" alt="Logro ${index + 1}" class="achievement-img" id="achievement-${index}">
+                        <img src="${config.achievement}" alt="Logro ${index + 1}" class="achievement-img" id="achievement-${index}">
                     </div>
                     <div class="achievement-date">${achievement.date}</div>
                 `;
@@ -909,7 +919,22 @@
             document.getElementById('update-controls').style.display = 'none';
         }
 
-        // Funciones de actualización de imágenes
+        // Funciones de actualización de contenido
+        function actualizarCoinsDesdeInput() {
+            const nuevoValor = parseInt(document.getElementById('coins-input').value);
+            if (!isNaN(nuevoValor) && nuevoValor >= 0) {
+                actualizarCoins(nuevoValor);
+                document.getElementById('coins-input').value = '';
+            } else {
+                alert('Por favor, ingresa un número válido para las coins');
+            }
+        }
+
+        function actualizarCoins(nuevoValor) {
+            document.getElementById('coins-count').textContent = nuevoValor;
+            config.coins = nuevoValor;
+        }
+
         function actualizarAvatarDesdeInput() {
             const nuevaUrl = document.getElementById('avatar-url').value;
             if (nuevaUrl) {
@@ -963,6 +988,7 @@
                 document.getElementById('avatar-container').innerHTML = 
                     `<img src="${nuevaUrl}" alt="Avatar Yunchen" class="avatar-img" id="yunchen-avatar">`;
             }
+            config.avatar = nuevaUrl;
         }
 
         function actualizarCoinIcon(nuevaUrl) {
@@ -973,6 +999,7 @@
                 document.getElementById('coin-icon').innerHTML = 
                     `<img src="${nuevaUrl}" alt="Coin" class="coin-img" id="coin-image">`;
             }
+            config.coin = nuevaUrl;
         }
 
         function actualizarLogro(indice, nuevaUrl) {
@@ -997,6 +1024,7 @@
             });
             
             // Hacer funciones globales para facilitar el acceso desde la consola
+            window.actualizarCoins = actualizarCoins;
             window.actualizarAvatar = actualizarAvatar;
             window.actualizarCoinIcon = actualizarCoinIcon;
             window.actualizarLogro = actualizarLogro;

@@ -1242,15 +1242,25 @@ async function actualizarCoinsDesdeInput() {
 }
 
         async function actualizarCoins(nuevoValor) {
-            config.coins = nuevoValor;
-            document.getElementById('coins-count').textContent = nuevoValor;
-            
-            // Guardar en localStorage
-            guardarConfiguracion();
-            
-            // Intentar guardar en Supabase
-            await guardarConfiguracionEnSupabase();
-        }
+    console.log('🎯 Actualizando coins a:', nuevoValor);
+    
+    // Actualizar interfaz inmediatamente
+    config.coins = nuevoValor;
+    document.getElementById('coins-count').textContent = nuevoValor;
+    
+    // Guardar en localStorage primero
+    guardarConfiguracion();
+    console.log('✅ Configuración guardada en localStorage');
+    
+    // Intentar guardar en Supabase
+    const exito = await guardarConfiguracionEnSupabase();
+    
+    if (exito) {
+        console.log('✅ Coins actualizadas correctamente en Supabase');
+    } else {
+        console.log('⚠️ Coins actualizadas localmente pero NO en Supabase');
+    }
+}
 
         // Nueva función para subir y actualizar avatar
         async function subirYActualizarAvatar() {
